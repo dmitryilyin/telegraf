@@ -79,7 +79,7 @@ in ratio 2:1.
 - burrow_topic (one event for each topic offset)
   - offset (int64)
 
-- burrow_consumer
+- burrow_consumer (one event for each topic partition)
   - start.offset (int64)
   - start.lag (int64)
   - start.timestamp (int64)
