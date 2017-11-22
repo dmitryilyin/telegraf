@@ -216,40 +216,40 @@ func (l *Logstash) gatherPipelineStats(url string, acc telegraf.Accumulator) err
 	}
 
 	// Input Plugins
-	for _, plugin := range PipelineStats.Pipeline.Plugins.Inputs {
-		//plugin := &plugin
-		fields := map[string]interface{}{
-			"name":               plugin.Name,
-			"duration_in_millis": plugin.Events.DurationInMillis,
-			"in":                 plugin.Events.In,
-			"out":                plugin.Events.Out,
-		}
-		acc.AddFields("logstash_plugin_input_"+plugin.Name, fields, tags, now)
-	}
+	//for _, plugin := range PipelineStats.Pipeline.Plugins.Inputs {
+	//	//plugin := &plugin
+	//	fields := map[string]interface{}{
+	//		"name":               plugin.Name,
+	//		"duration_in_millis": plugin.Events.DurationInMillis,
+	//		"in":                 plugin.Events.In,
+	//		"out":                plugin.Events.Out,
+	//	}
+	//	acc.AddFields("logstash_plugin_input_"+plugin.Name, fields, tags, now)
+	//}
 
 	// Filters Plugins
-	for _, plugin := range PipelineStats.Pipeline.Plugins.Filters {
-		//plugin := &plugin
-		fields := map[string]interface{}{
-			"name":               plugin.Name,
-			"duration_in_millis": plugin.Events.DurationInMillis,
-			"in":                 plugin.Events.In,
-			"out":                plugin.Events.Out,
-		}
-		acc.AddFields("logstash_plugin_filter_"+plugin.Name, fields, tags, now)
-	}
+	//for _, plugin := range PipelineStats.Pipeline.Plugins.Filters {
+	//	//plugin := &plugin
+	//	fields := map[string]interface{}{
+	//		"name":               plugin.Name,
+	//		"duration_in_millis": plugin.Events.DurationInMillis,
+	//		"in":                 plugin.Events.In,
+	//		"out":                plugin.Events.Out,
+	//	}
+	//	acc.AddFields("logstash_plugin_filter_"+plugin.Name, fields, tags, now)
+	//}
 
 	// Output Plugins
-	for _, plugin := range PipelineStats.Pipeline.Plugins.Outputs {
-		//plugin := &plugin
-		fields := map[string]interface{}{
-			"name":               plugin.Name,
-			"duration_in_millis": plugin.Events.DurationInMillis,
-			"in":                 plugin.Events.In,
-			"out":                plugin.Events.Out,
-		}
-		acc.AddFields("logstash_plugin_output_"+plugin.Name, fields, tags, now)
-	}
+	//for _, plugin := range PipelineStats.Pipeline.Plugins.Outputs {
+	//	//plugin := &plugin
+	//	fields := map[string]interface{}{
+	//		"name":               plugin.Name,
+	//		"duration_in_millis": plugin.Events.DurationInMillis,
+	//		"in":                 plugin.Events.In,
+	//		"out":                plugin.Events.Out,
+	//	}
+	//	acc.AddFields("logstash_plugin_output_"+plugin.Name, fields, tags, now)
+	//}
 
 	return nil
 }
