@@ -3,9 +3,11 @@ package burrow
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
+	"log"
 	"net/http"
 
-	"fmt"
 	"github.com/influxdata/telegraf"
 )
 
@@ -115,11 +117,17 @@ func (api *apiClient) call(uri string) (apiResponse, error) {
 
 	// decode response
 	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return br, err
+	}
+
+	log.Printf("D! call: %s, code: %d, body: %s\n", req.URL.String(), res.StatusCode, string(body))
 	if res.StatusCode != http.StatusOK {
 		return br, fmt.Errorf("endpoint: '%s', invalid response code: '%d'", uri, res.StatusCode)
 	}
 
-	if err := json.NewDecoder(res.Body).Decode(&br); err != nil {
+	if err := json.Unmarshal(body, &br); err != nil {
 		return br, err
 	}
 
