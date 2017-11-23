@@ -44,7 +44,7 @@ func fetchConsumer(api apiClient, res apiResponse, uri string) {
 
 	for _, group := range groupList {
 		escaped := url.PathEscape(group)
-		producerChan <- fmt.Sprintf("%s/%s/status", uri, escaped)
+		producerChan <- fmt.Sprintf("%s/%s/lag", uri, escaped)
 	}
 
 	for i := len(groupList); i > 0; i-- {
