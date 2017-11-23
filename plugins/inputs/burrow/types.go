@@ -122,7 +122,7 @@ func (api *apiClient) call(uri string) (apiResponse, error) {
 		return br, err
 	}
 
-	log.Printf("D! call: %s, code: %d, body: %s\n", req.URL.String(), res.StatusCode, string(body))
+	log.Printf("D! call: %s, code: %d\n", req.URL.String(), res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		return br, fmt.Errorf("endpoint: '%s', invalid response code: '%d'", uri, res.StatusCode)
 	}
