@@ -104,8 +104,6 @@ in ratio 2:1.
 - burrow_group_summary (one event per each consumer group)
   - status (string)
   - status_code (1..6, see Partition status mappings)
-
-  // those fields present only when maxlag is present and not null
   - maxlag.topic (string)
   - maxlag.partition (int32)
   - maxlag.status (string)
@@ -116,6 +114,9 @@ in ratio 2:1.
   - maxlag.end.offset (int64)
   - maxlag.end.timestamp (int64)
   - maxlag.end.lag (int64)
+
+> maxlag.* fields only present when maxlag is present and burrow response
+contains it. If no lag is present in group, there will be no maxlag.* fields.
 
 
 ### Tags
