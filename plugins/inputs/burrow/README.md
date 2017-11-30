@@ -39,6 +39,18 @@ from [Burrow](https://github.com/linkedin/Burrow) HTTP API.
   ## Internal working queue adjustments (per measurement, per server), default is 4.
   #worker_queue_length = 5
 
+  ## Log requests and response codes, default is false
+  #debug = false
+
+  ## Disable burrow_group_summary measurement, default is false
+  #disable_group_summary = false
+
+  ## Disable burrow_group_topic measurement, default is false
+  #disable_group_topics = false
+
+  ## Disable burrow_topic_offset measurement, default is false
+  #disable_topics = false
+
   ## Credentials for basic HTTP authentication.
   #username = ""
   #password = ""
@@ -74,19 +86,37 @@ in ratio 2:1.
 * STOP = 5
 * STALL = 6
 
-### Measurements & Fields:
+### Fields:
 
-- burrow_topic (one event for each topic offset)
+- burrow_topic_offset
   - offset (int64)
 
-- burrow_consumer (one event for each topic partition)
+- burrow_group_topic (one event per each topic partition)
   - start.offset (int64)
   - start.lag (int64)
   - start.timestamp (int64)
   - end.offset (int64)
   - end.lag (int64)
   - end.timestamp (int64)
-  - status (1..6, see Partition status mappings)
+  - status (string)
+  - status_code (1..6, see Partition status mappings)
+
+- burrow_group_summary (one event per each consumer group)
+  - status (string)
+  - status_code (1..6, see Partition status mappings)
+
+  // those fields present only when maxlag is present and not null
+  - maxlag.topic (string)
+  - maxlag.partition (int32)
+  - maxlag.status (string)
+  - maxlag.status_code (1..6, see Partition status mappings)
+  - maxlag.start.offset (int64)
+  - maxlag.start.timestamp (int64)
+  - maxlag.start.lag (int64)
+  - maxlag.end.offset (int64)
+  - maxlag.end.timestamp (int64)
+  - maxlag.end.lag (int64)
+
 
 ### Tags
 
@@ -95,8 +125,12 @@ in ratio 2:1.
   - topic
   - partition
 
-- burrow_consumer
+- burrow_consumer_topic
   - cluster
   - group
   - topic
   - partition
+
+- burrow_consumer_summary
+  - cluster
+  - group

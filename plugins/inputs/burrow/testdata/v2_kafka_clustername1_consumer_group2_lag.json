@@ -4,12 +4,12 @@
   "status": {
     "cluster": "clustername1",
     "group": "group2",
-    "status": "WARN",
+    "status": "OK",
     "complete": true,
     "maxlag": {
       "topic": "topicB",
       "partition": 0,
-      "status": "OK",
+      "status": "WARN",
       "start": {
         "offset": 823889,
         "timestamp": 1432423256002,
@@ -18,7 +18,7 @@
       "end": {
         "offset": 824743,
         "timestamp": 1432423796003,
-        "lag": 25
+        "lag": 26
       }
     },
     "partitions": [
@@ -29,12 +29,12 @@
         "start": {
           "offset": 823890,
           "timestamp": 1432423256002,
-          "lag": 1
+          "lag": 20
         },
         "end": {
           "offset": 824745,
           "timestamp": 1432423796003,
-          "lag": 42
+          "lag": 26
         }
       }
     ]

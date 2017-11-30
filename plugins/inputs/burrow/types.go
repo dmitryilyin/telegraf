@@ -14,6 +14,7 @@ import (
 type (
 	// burrow api client
 	apiClient struct {
+		debug       bool
 		client      http.Client
 		acc         telegraf.Accumulator
 		apiPrefix   string
@@ -23,6 +24,10 @@ type (
 		limitClusters []string
 		limitGroups   []string
 		limitTopics   []string
+
+		disableGroupSummary bool
+		disableGroupTopics  bool
+		disableTopicOffsets bool
 
 		requestUser string
 		requestPass string
@@ -57,6 +62,10 @@ type (
 	// burrow api response: status field
 	apiStatusResponse struct {
 		Partitions []apiStatusResponseLag `json:"partitions"`
+		Cluster    string                 `json:"cluster"`
+		Group      string                 `json:"group"`
+		Status     string                 `json:"status"`
+		Maxlag     *apiStatusResponseLag  `json:"maxlag"`
 	}
 
 	// buttor api response: lag field
@@ -122,7 +131,9 @@ func (api *apiClient) call(uri string) (apiResponse, error) {
 		return br, err
 	}
 
-	log.Printf("D! call: %s, code: %d\n", req.URL.String(), res.StatusCode)
+	if api.debug {
+		log.Printf("D! call: %s, code: %d\n", req.URL.String(), res.StatusCode)
+	}
 	if res.StatusCode != http.StatusOK {
 		return br, fmt.Errorf("endpoint: '%s', invalid response code: '%d'", uri, res.StatusCode)
 	}

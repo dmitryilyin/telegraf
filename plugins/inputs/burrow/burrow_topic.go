@@ -11,6 +11,10 @@ import (
 func gatherTopicStats(api apiClient, clusterList []string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	if api.disableTopicOffsets == true {
+		return
+	}
+
 	producerChan := make(chan string, len(clusterList))
 	doneChan := make(chan bool, len(clusterList))
 
@@ -32,7 +36,6 @@ func gatherTopicStats(api apiClient, clusterList []string, wg *sync.WaitGroup) {
 
 // fetch topic status: /v2/kafka/(clustername)/topic/(topicname)
 func fetchTopic(api apiClient, res apiResponse, uri string) {
-
 	topicList := whitelistSlice(res.Topics, api.limitTopics)
 
 	producerChan := make(chan string, len(topicList))
@@ -64,7 +67,7 @@ func publishTopic(api apiClient, res apiResponse, uri string) {
 		}
 
 		api.acc.AddFields(
-			"burrow_topic",
+			"burrow_topic_offset",
 			map[string]interface{}{
 				"offset": offset,
 			},

@@ -68,15 +68,16 @@ func getHTTPServerBasicAuth() *httptest.Server {
 }
 
 // test burrow_topic measurement
-func TestTopicMeasurement(t *testing.T) {
+func TestTopicOffsetMeasurement(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	s := getHTTPServer()
 	defer s.Close()
 
 	plugin := &burrow{
-		Servers: []string{s.URL},
-		Groups:  []string{"non_existent_group"}, // disable burrower_consumer
+		Servers:             []string{s.URL},
+		DisableGroupSummary: true,
+		DisableGroupTopics:  true,
 	}
 
 	acc := &testutil.Accumulator{}
@@ -105,23 +106,24 @@ func TestTopicMeasurement(t *testing.T) {
 
 	require.Exactly(t, 5, len(acc.Metrics)) // (5 burrow_topic)
 	require.Empty(t, acc.Errors)
-	require.Equal(t, true, acc.HasMeasurement("burrow_topic"))
+	require.Equal(t, true, acc.HasMeasurement("burrow_topic_offset"))
 
 	for i := 0; i < len(fields); i++ {
-		acc.AssertContainsTaggedFields(t, "burrow_topic", fields[i], tags[i])
+		acc.AssertContainsTaggedFields(t, "burrow_topic_offset", fields[i], tags[i])
 	}
 }
 
 // test burrow_consumer measurement
-func TestConsumerMeasurement(t *testing.T) {
+func TestGroupTopicMeasurement(t *testing.T) {
 	defer leaktest.Check(t)()
 
 	s := getHTTPServer()
 	defer s.Close()
 
 	plugin := &burrow{
-		Servers: []string{s.URL},
-		Topics:  []string{"non_existent_topic"}, // disable burrower_topic
+		Servers:             []string{s.URL},
+		DisableTopics:       true,
+		DisableGroupSummary: true,
 	}
 
 	acc := &testutil.Accumulator{}
@@ -136,17 +138,19 @@ func TestConsumerMeasurement(t *testing.T) {
 			"end.offset":      int64(824743),
 			"end.lag":         int64(25),
 			"end.timestamp":   int64(1432423796001),
-			"status":          3,
+			"status":          "WARN",
+			"status_code":     3,
 		},
 		// group2
 		{
 			"start.offset":    int64(823890),
-			"start.lag":       int64(1),
+			"start.lag":       int64(20),
 			"start.timestamp": int64(1432423256002),
 			"end.offset":      int64(824745),
-			"end.lag":         int64(42),
+			"end.lag":         int64(26),
 			"end.timestamp":   int64(1432423796003),
-			"status":          1,
+			"status":          "OK",
+			"status_code":     1,
 		},
 		// group3
 		{
@@ -156,7 +160,8 @@ func TestConsumerMeasurement(t *testing.T) {
 			"end.offset":      int64(524743),
 			"end.lag":         int64(26),
 			"end.timestamp":   int64(1432423796000),
-			"status":          4,
+			"status":          "ERR",
+			"status_code":     4,
 		},
 	}
 	tags := []map[string]string{
@@ -167,10 +172,81 @@ func TestConsumerMeasurement(t *testing.T) {
 
 	require.Exactly(t, 3, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
-	require.Equal(t, true, acc.HasMeasurement("burrow_consumer"))
+	require.Equal(t, true, acc.HasMeasurement("burrow_group_topic"))
 
 	for i := 0; i < len(fields); i++ {
-		acc.AssertContainsTaggedFields(t, "burrow_consumer", fields[i], tags[i])
+		acc.AssertContainsTaggedFields(t, "burrow_group_topic", fields[i], tags[i])
+	}
+}
+
+func TestGroupSummaryMeasurement(t *testing.T) {
+	defer leaktest.Check(t)()
+
+	s := getHTTPServer()
+	defer s.Close()
+
+	plugin := &burrow{
+		Servers:            []string{s.URL},
+		DisableTopics:      true,
+		DisableGroupTopics: true,
+	}
+
+	acc := &testutil.Accumulator{}
+	plugin.Gather(acc)
+
+	fields := []map[string]interface{}{
+		{
+			"status":      "WARN",
+			"status_code": 3,
+			//
+			"maxlag.topic":       "topicA",
+			"maxlag.parittion":   int32(0),
+			"maxlag.status":      "WARN",
+			"maxlag.status_code": 3,
+			// start
+			"maxlag.start.offset":    int64(823889),
+			"maxlag.start.timestamp": int64(1432423256000),
+			"maxlag.start.lag":       int64(20),
+			// end
+			"maxlag.end.offset":    int64(824743),
+			"maxlag.end.timestamp": int64(1432423796001),
+			"maxlag.end.lag":       int64(25),
+		},
+		{
+			"status":      "OK",
+			"status_code": 1,
+			//
+			"maxlag.topic":       "topicB",
+			"maxlag.parittion":   int32(0),
+			"maxlag.status":      "WARN",
+			"maxlag.status_code": 3,
+			// start
+			"maxlag.start.offset":    int64(823889),
+			"maxlag.start.timestamp": int64(1432423256002),
+			"maxlag.start.lag":       int64(20),
+			// end
+			"maxlag.end.offset":    int64(824743),
+			"maxlag.end.timestamp": int64(1432423796003),
+			"maxlag.end.lag":       int64(26),
+		},
+		{
+			"status":      "WARN",
+			"status_code": 3,
+		},
+	}
+
+	tags := []map[string]string{
+		{"cluster": "clustername1", "group": "group1"},
+		{"cluster": "clustername1", "group": "group2"},
+		{"cluster": "clustername2", "group": "group3"},
+	}
+
+	require.Exactly(t, 3, len(acc.Metrics))
+	require.Empty(t, acc.Errors)
+	require.Equal(t, true, acc.HasMeasurement("burrow_group_summary"))
+
+	for i := 0; i < len(fields); i++ {
+		acc.AssertContainsTaggedFields(t, "burrow_group_summary", fields[i], tags[i])
 	}
 }
 
@@ -191,7 +267,8 @@ func TestMultipleServers(t *testing.T) {
 	acc := &testutil.Accumulator{}
 	plugin.Gather(acc)
 
-	require.Exactly(t, 16, len(acc.Metrics)) // (5 burrow_topic, 3 burrow_consumer) * 2
+	// (5 burrow_topic, 3 burrow_group_topic, 3 burrow_group_summary) * 2
+	require.Exactly(t, 22, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
 }
 
@@ -210,7 +287,8 @@ func TestMultipleRuns(t *testing.T) {
 		acc := &testutil.Accumulator{}
 		plugin.Gather(acc)
 
-		require.Exactly(t, 8, len(acc.Metrics)) // 5 burrow_topic, 3 burrow_consumer
+		// 5 burrow_topic, 3 burrow_group_topic, 3 burrow_group_summary
+		require.Exactly(t, 11, len(acc.Metrics))
 		require.Empty(t, acc.Errors)
 	}
 }
@@ -231,7 +309,8 @@ func TestBasicAuthConfig(t *testing.T) {
 	acc := &testutil.Accumulator{}
 	plugin.Gather(acc)
 
-	require.Exactly(t, 8, len(acc.Metrics)) // (5 burrow_topic, 3 burrow_consumer)
+	// 5 burrow_topic, 3 burrow_group_topic, 3 burrow_group_summary
+	require.Exactly(t, 11, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
 }
 
@@ -260,7 +339,8 @@ func TestBasicAuthEndpoint(t *testing.T) {
 	acc := &testutil.Accumulator{}
 	plugin.Gather(acc)
 
-	require.Exactly(t, 8, len(acc.Metrics)) // (5 burrow_topic, 3 burrow_consumer)
+	// 5 burrow_topic, 3 burrow_group_topic, 3 burrow_group_summary
+	require.Exactly(t, 11, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
 }
 
@@ -279,7 +359,8 @@ func TestLimitClusters(t *testing.T) {
 	acc := &testutil.Accumulator{}
 	plugin.Gather(acc)
 
-	require.Exactly(t, 0, len(acc.Metrics)) // no match by cluster
+	// no match by cluster
+	require.Exactly(t, 0, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
 }
 
@@ -291,15 +372,16 @@ func TestLimitGroups(t *testing.T) {
 	defer s.Close()
 
 	plugin := &burrow{
-		Servers: []string{s.URL},
-		Groups:  []string{"group2"},
-		Topics:  []string{"non_existent_topic"}, // disable burrow_topic
+		Servers:       []string{s.URL},
+		Groups:        []string{"group2"},
+		DisableTopics: true,
 	}
 
 	acc := &testutil.Accumulator{}
 	plugin.Gather(acc)
 
-	require.Exactly(t, 1, len(acc.Metrics)) // (1 burrow_consumer)
+	// 1 burrow_group_topic, 1 burrow_group_summary
+	require.Exactly(t, 2, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
 }
 
@@ -311,14 +393,16 @@ func TestLimitTopics(t *testing.T) {
 	defer s.Close()
 
 	plugin := &burrow{
-		Servers: []string{s.URL},
-		Groups:  []string{"non_existent_group"}, // disable burrow_consumer
-		Topics:  []string{"topicB"},
+		Servers:             []string{s.URL},
+		DisableGroupTopics:  true,
+		DisableGroupSummary: true,
+		Topics:              []string{"topicB"},
 	}
 
 	acc := &testutil.Accumulator{}
 	plugin.Gather(acc)
 
-	require.Exactly(t, 1, len(acc.Metrics)) // (1 burrow_topics)
+	// 1 burrow_topic
+	require.Exactly(t, 1, len(acc.Metrics))
 	require.Empty(t, acc.Errors)
 }

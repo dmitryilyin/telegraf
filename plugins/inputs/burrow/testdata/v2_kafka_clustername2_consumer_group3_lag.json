@@ -2,25 +2,11 @@
   "error": false,
   "message": "consumer group status returned",
   "status": {
-    "cluster": "clustername1",
+    "cluster": "clustername2",
     "group": "group3",
     "status": "WARN",
     "complete": false,
-    "maxlag": {
-      "topic": "topicC",
-      "partition": 0,
-      "status": "ERR",
-      "start": {
-        "offset": 823889,
-        "timestamp": 1432423256000,
-        "lag": 20
-      },
-      "end": {
-        "offset": 824743,
-        "timestamp": 1432423796000,
-        "lag": 25
-      }
-    },
+    "maxlag": null,
     "partitions": [
       {
         "topic": "topicC",

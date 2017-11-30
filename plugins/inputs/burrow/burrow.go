@@ -45,6 +45,18 @@ const configSample = `
   ## Internal working queue adjustments (per measurement, per server), default is 4.
   #worker_queue_length = 5
 
+  ## Log requests and response codes, default is false
+  #debug = false
+
+  ## Disable burrow_group_summary measurement, default is false
+  #disable_group_summary = false
+
+  ## Disable burrow_group_topic measurement, default is false
+  #disable_group_topics = false
+
+  ## Disable burrow_topic_offset measurement, default is false
+  #disable_topics = false
+
   ## Credentials for basic HTTP authentication.
   #username = ""
   #password = ""
@@ -73,8 +85,15 @@ type (
 		Groups   []string
 		Topics   []string
 
+		DisableTopics       bool
+		DisableGroupSummary bool
+		DisableGroupTopics  bool
+
 		MaxConcurrentConnections int `toml:"max_concurrent_connections"`
 		WorkerQueueLength        int `toml:"worker_queue_length"`
+
+		// log requests and status codes
+		Debug bool
 
 		// Path to CA file
 		SSLCA string `toml:"ssl_ca"`
@@ -103,8 +122,14 @@ var (
 
 func init() {
 	inputs.Add("burrow", func() telegraf.Input {
-		return &burrow{}
+		return getPlugin()
 	})
+}
+
+func getPlugin() *burrow {
+	return &burrow{
+		WorkerQueueLength: 5,
+	}
 }
 
 func (b *burrow) SampleConfig() string {
@@ -164,10 +189,32 @@ func (b *burrow) getErrorChannel(acc telegraf.Accumulator) chan error {
 	return errorChan
 }
 
+func (b *burrow) processDefaults() {
+	// setup defaults
+	if b.APIPrefix == "" {
+		b.APIPrefix = "/v2/kafka"
+	}
+
+	if b.Timeout.Duration < time.Second {
+		b.Timeout = internal.Duration{
+			Duration: time.Second * 5,
+		}
+	}
+
+	if b.MaxConcurrentConnections < 1 {
+		b.MaxConcurrentConnections = 10
+	}
+
+	if b.WorkerQueueLength < 1 {
+		b.WorkerQueueLength = 5
+	}
+}
+
 // API client construction
 func (b *burrow) getClient(acc telegraf.Accumulator, addr string, errorChan chan<- error) (apiClient, error) {
 	var c apiClient
 
+	b.processDefaults()
 	u, err := url.Parse(addr)
 	if err != nil {
 		return c, err
@@ -187,22 +234,7 @@ func (b *burrow) getClient(acc telegraf.Accumulator, addr string, errorChan chan
 		return c, err
 	}
 
-	if b.APIPrefix == "" {
-		b.APIPrefix = "/v2/kafka"
-	}
-
-	if b.MaxConcurrentConnections < 1 {
-		b.MaxConcurrentConnections = 10
-	}
-
-	if b.WorkerQueueLength < 1 {
-		b.WorkerQueueLength = 5
-	}
-
-	if b.Timeout.Duration < time.Second {
-		b.Timeout.Duration = time.Second * 5
-	}
-
+	// construct client
 	c = apiClient{
 		client: http.Client{
 			Transport: &http.Transport{
@@ -211,9 +243,14 @@ func (b *burrow) getClient(acc telegraf.Accumulator, addr string, errorChan chan
 			Timeout: b.Timeout.Duration,
 		},
 
+		debug:     b.Debug,
 		acc:       acc,
 		apiPrefix: b.APIPrefix,
 		baseURL:   fmt.Sprintf("%s://%s", u.Scheme, u.Host),
+
+		disableGroupSummary: b.DisableGroupSummary,
+		disableGroupTopics:  b.DisableGroupTopics,
+		disableTopicOffsets: b.DisableTopics,
 
 		limitClusters: b.Clusters,
 		limitGroups:   b.Groups,
