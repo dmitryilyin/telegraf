@@ -130,6 +130,7 @@ configuration options.
 * [aws cloudwatch](./plugins/inputs/cloudwatch)
 * [bcache](./plugins/inputs/bcache)
 * [bond](./plugins/inputs/bond)
+* [burrow](./plugins/inputs/burrow)
 * [cassandra](./plugins/inputs/cassandra)
 * [ceph](./plugins/inputs/ceph)
 * [cgroup](./plugins/inputs/cgroup)
